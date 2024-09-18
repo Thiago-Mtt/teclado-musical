@@ -34,7 +34,7 @@ SYMBOLS=-DUNITY_FIXTURE_NO_EXTRAS
 CFLAGS += -Wall -ffunction-sections 
 
 # Linker flags
-LDFLAGS += -lm
+LDFLAGS += -Wall -lm
 
 # Generate names for output object files (*.o)
 COBJECTS = $(patsubst %.c, %.o, $(CSOURCES))

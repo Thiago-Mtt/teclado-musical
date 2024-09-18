@@ -1,9 +1,10 @@
 #ifndef D_BUTTONHANDLER_H
 #define D_BUTTONHANDLER_H
 
-typedef enum
-{open, pressed, error}
-ButtonState;
+#include "ButtonState.h"
+
+#define NUMBER_OF_BUTTONS 8
+
 
 void    ButtonHandler_Open                 (void);
 void    ButtonHandler_Close                (void);
