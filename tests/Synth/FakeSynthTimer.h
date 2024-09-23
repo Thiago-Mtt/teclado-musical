@@ -7,4 +7,8 @@
 bool FakeSynthTimer_Initialized(void);
 void FakeSynthTimer_Interrupt  (void);
 
+unsigned int FakeSynthTimer_GetDisables(void);
+unsigned int FakeSynthTimer_GetEnables(void);
+
+
 #endif /*D_FAKESYNTHTIMER_H*/

@@ -19,12 +19,14 @@
  * DAC de teste decta se houve nova escrita                                                     OK
  * DAC de teste, limpar ultima escrita                                                          OK
  * Novas escritas no DAC por interrupção são 128 enquanto não há teclas pressionadas            OK
- * Pressionar tecla gera aumento de 12 na escrita do DAC (140 no DAC)
+ * Pressionar tecla gera aumento de 12 na escrita do DAC (140 no DAC)                           OK
  *      (127/8 < 12, excursão positiva/negativa suficiente para todos os botoes)                
- * Nova tecla só é processada após a interrupção do timer
+ * Nova tecla só é processada após a interrupção do timer                                       
  *      Processamento do próximo valor do DAC só é feito após interrupção
  *      Novo valor só aparece no DAC após uma outra interrupção
- * Após um numero de interrupções + execuções do modulo, tecla adiciona -12 a escrita do DAC
+ * Interrupção do Timer é desabilitada ao verificar se é tempo de processar novo valor DAC      OK
+ * Interrupção do Timer é desabilitada enquanto se escreve em memoria compartilhada             OK
+ * Após um numero de interrupções + execuções do modulo, tecla adiciona -12 a escrita do DAC    
  *      Após 123 interrupções para a nota C4 (261Hz) considerando sampling de 32Khz
  * Soltar tecla desativa sua influencia no DAC
  * Pressionar tecla novamente reinicia progressao da tecla
@@ -64,7 +66,7 @@ static void checkDACForNewWriteAndValue(unsigned char value)
     newWrite = FakeSynthDAC_GetLastWrite(&writeValue);
 
     TEST_ASSERT(newWrite);
-    TEST_ASSERT_EQUAL_UINT8(128, writeValue);
+    TEST_ASSERT_EQUAL_UINT8(value, writeValue);
 }
 
 static void checkDACForNoNewWrite(void)
@@ -148,19 +150,65 @@ TEST(Synth, DACWriteMidLevelWhileNoPressedKeys)
     TEST_ASSERT_EQUAL(128, writeValue);
 }
 
-//TEST(Synth, PressC4IncrementsDACBy12)
+TEST(Synth, PressC4IncrementsDACBy12)
+{
+    FakeSynthDAC_ClearLastWrite();
+
+    Synth_Press(C4);
+    checkDACForNoNewWrite();
+
+    FakeSynthTimer_Interrupt();
+    checkDACForNewWriteAndValue(128);
+
+    Synth_Run();
+    checkDACForNoNewWrite();
+
+    FakeSynthTimer_Interrupt();
+    checkDACForNewWriteAndValue(140);
+}
+
+TEST(Synth, PauseTimerInterruptOnCheckingIfIsTimeToProcessNextDAC)
+{
+    unsigned int enables, disables;
+    Synth_Run();
+
+    enables = FakeSynthTimer_GetEnables();
+    disables = FakeSynthTimer_GetDisables();
+
+    TEST_ASSERT_EQUAL(1, enables);
+    TEST_ASSERT_EQUAL(1, disables);
+}
+
+TEST(Synth, PauseTimerInterruptOnNextDACValueUpdate)
+{
+    unsigned int enables, disables;
+    FakeSynthTimer_Interrupt();
+    Synth_Run();
+
+    enables = FakeSynthTimer_GetEnables();
+    disables = FakeSynthTimer_GetDisables();
+
+    TEST_ASSERT_EQUAL(2, enables);
+    TEST_ASSERT_EQUAL(2, disables);
+}
+
+TEST(Synth, ProcessNextDACValueOnlyAfterDACWrite)
+{
+    FakeSynthDAC_ClearLastWrite();
+    Synth_Press(C4);
+    Synth_Run();
+    FakeSynthTimer_Interrupt();
+
+    checkDACForNewWriteAndValue(128); // C4 não contabilizado
+
+    Synth_Run();
+    Synth_Press(D4);
+    Synth_Run();
+    FakeSynthTimer_Interrupt();
+    checkDACForNewWriteAndValue(140); // C4 contabilizado, mas não D4
+}
+
+//TEST(Synth, PressC4DecrementDACBy12AfterHalfPeriod)
 //{
-//    FakeSynthDAC_ClearLastWrite();
-//
-//    Synth_Press(C4);
-//    checkDACForNoNewWrite();
-//
-//    FakeSynthTimer_Interrupt();
-//    checkDACForNewWriteAndValue(128);
-//
-//    Synth_Run();
-//    checkDACForNoNewWrite();
-//
-//    FakeSynthTimer_Interrupt();
-//    checkDACForNewWriteAndValue(140);
+//    
 //}

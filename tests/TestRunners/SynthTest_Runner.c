@@ -10,4 +10,8 @@ TEST_GROUP_RUNNER(Synth)
   RUN_TEST_CASE(Synth, DACDetectNewWrite);
   RUN_TEST_CASE(Synth, DACClearLastWrite);
   RUN_TEST_CASE(Synth, DACWriteMidLevelWhileNoPressedKeys);
+  RUN_TEST_CASE(Synth, PressC4IncrementsDACBy12);
+  RUN_TEST_CASE(Synth, PauseTimerInterruptOnCheckingIfIsTimeToProcessNextDAC);
+  RUN_TEST_CASE(Synth, PauseTimerInterruptOnNextDACValueUpdate);
+  RUN_TEST_CASE(Synth, ProcessNextDACValueOnlyAfterDACWrite);
 }
