@@ -5,5 +5,6 @@
 #include <stdbool.h>
 
 bool FakeSynthTimer_Initialized(void);
+void FakeSynthTimer_Interrupt  (void);
 
 #endif /*D_FAKESYNTHTIMER_H*/

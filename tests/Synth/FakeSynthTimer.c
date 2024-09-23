@@ -23,3 +23,8 @@ bool FakeSynthTimer_Initialized(void)
 {
     return initialized;
 }
+
+void FakeSynthTimer_Interrupt(void)
+{
+    timerCallback();
+}

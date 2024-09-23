@@ -17,9 +17,13 @@
  * Timer e DAC são inicializados durante inicialização do modulo                                OK
  * DAC é escrito em 128 após inicialização do modulo Synth                                      OK
  * DAC de teste decta se houve nova escrita                                                     OK
- * Novas escritas no DAC por interrupção são 128 enquanto não há teclas pressionadas
+ * DAC de teste, limpar ultima escrita                                                          OK
+ * Novas escritas no DAC por interrupção são 128 enquanto não há teclas pressionadas            OK
  * Pressionar tecla gera aumento de 12 na escrita do DAC (140 no DAC)
- *      (127/8 < 12, excursão positiva/negativa suficiente para todos os botoes)
+ *      (127/8 < 12, excursão positiva/negativa suficiente para todos os botoes)                
+ * Nova tecla só é processada após a interrupção do timer
+ *      Processamento do próximo valor do DAC só é feito após interrupção
+ *      Novo valor só aparece no DAC após uma outra interrupção
  * Após um numero de interrupções + execuções do modulo, tecla adiciona -12 a escrita do DAC
  *      Após 123 interrupções para a nota C4 (261Hz) considerando sampling de 32Khz
  * Soltar tecla desativa sua influencia no DAC
@@ -50,6 +54,27 @@ TEST_SETUP(Synth)
 TEST_TEAR_DOWN(Synth)
 {
     Synth_Close();
+}
+
+static void checkDACForNewWriteAndValue(unsigned char value)
+{
+    bool newWrite = false;
+    unsigned char writeValue;
+
+    newWrite = FakeSynthDAC_GetLastWrite(&writeValue);
+
+    TEST_ASSERT(newWrite);
+    TEST_ASSERT_EQUAL_UINT8(128, writeValue);
+}
+
+static void checkDACForNoNewWrite(void)
+{
+    bool newWrite = false;
+    unsigned char writeValue;
+
+    newWrite = FakeSynthDAC_GetLastWrite(&writeValue);
+
+    TEST_ASSERT(!newWrite);
 }
 
 TEST(Synth, OpenAndClose)
@@ -97,3 +122,45 @@ TEST(Synth, DACDetectNewWrite)
     newWrite = FakeSynthDAC_GetLastWrite(&writeValue);
     TEST_ASSERT(!newWrite);
 }
+
+TEST(Synth, DACClearLastWrite)
+{
+    bool newWrite = false;
+    unsigned char writeValue;
+
+    FakeSynthDAC_ClearLastWrite();
+    newWrite = FakeSynthDAC_GetLastWrite(&writeValue);
+
+    TEST_ASSERT(!newWrite);
+    TEST_ASSERT_EQUAL(0, newWrite);
+}
+
+TEST(Synth, DACWriteMidLevelWhileNoPressedKeys)
+{
+    bool newWrite = false;
+    unsigned char writeValue;
+
+    FakeSynthDAC_ClearLastWrite();
+    FakeSynthTimer_Interrupt();
+
+    newWrite = FakeSynthDAC_GetLastWrite(&writeValue);
+    TEST_ASSERT(newWrite);
+    TEST_ASSERT_EQUAL(128, writeValue);
+}
+
+//TEST(Synth, PressC4IncrementsDACBy12)
+//{
+//    FakeSynthDAC_ClearLastWrite();
+//
+//    Synth_Press(C4);
+//    checkDACForNoNewWrite();
+//
+//    FakeSynthTimer_Interrupt();
+//    checkDACForNewWriteAndValue(128);
+//
+//    Synth_Run();
+//    checkDACForNoNewWrite();
+//
+//    FakeSynthTimer_Interrupt();
+//    checkDACForNewWriteAndValue(140);
+//}

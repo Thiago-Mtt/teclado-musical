@@ -8,4 +8,6 @@ TEST_GROUP_RUNNER(Synth)
   RUN_TEST_CASE(Synth, TimerInitialization);
   RUN_TEST_CASE(Synth, DACWriteAfterInitialization);
   RUN_TEST_CASE(Synth, DACDetectNewWrite);
+  RUN_TEST_CASE(Synth, DACClearLastWrite);
+  RUN_TEST_CASE(Synth, DACWriteMidLevelWhileNoPressedKeys);
 }

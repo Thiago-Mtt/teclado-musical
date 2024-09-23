@@ -38,3 +38,9 @@ bool FakeSynthDAC_GetLastWrite (unsigned char * writeValue)
     }
     return false;
 }
+
+void FakeSynthDAC_ClearLastWrite(void)
+{
+    lastWriteValue = 0;
+    newWrite = false;
+}
