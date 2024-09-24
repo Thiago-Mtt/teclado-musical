@@ -16,4 +16,8 @@ TEST_GROUP_RUNNER(Synth)
   RUN_TEST_CASE(Synth, ProcessNextDACValueOnlyAfterDACWrite);
   RUN_TEST_CASE(Synth, PressC4IncrementsDACBy12ForHalfPeriod);
   RUN_TEST_CASE(Synth, PressC4DecrementDACBy12AfterHalfPeriod);
+  RUN_TEST_CASE(Synth, ReleaseC4KeyReturnsDACtoMidLevel);
+  RUN_TEST_CASE(Synth, ReleaseAndPressKeyResetsSignalProgression);
+  RUN_TEST_CASE(Synth, KeepKeyPressedRepeatsSignalOnDAC);
+  //RUN_TEST_CASE(Synth, PressD4);
 }

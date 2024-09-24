@@ -29,8 +29,9 @@
  * Pressionar tecla mantem escrita em 140 por meio periodo da tecla                             OK?
  * Após um numero de interrupções + execuções do modulo, tecla adiciona -12 a escrita do DAC    OK?
  *      Após 123 interrupções para a nota C4 (261Hz) considerando sampling de 32Khz
- * Soltar tecla desativa sua influencia no DAC  
- * Pressionar tecla novamente reinicia progressao da tecla
+ * Soltar tecla desativa sua influencia no DAC                                                  OK
+ * Pressionar tecla novamente reinicia progressao da tecla                                      OK
+ * Manter tecla pressionada repete periodicamente seu sinal na saida                            OK
  * Testar para as 8 teclas isoladas
  *      C4, D4, E4, F4, G4, A4, B4, C5
  * Duas ou mais teclas pressionadas somam as ondas no DAC
@@ -78,6 +79,15 @@ static void checkDACForNoNewWrite(void)
     newWrite = FakeSynthDAC_GetLastWrite(&writeValue);
 
     TEST_ASSERT(!newWrite);
+}
+
+static void runSynthCycles(unsigned int cycles)
+{
+    for (int i = 0; i < cycles; i++)
+    {
+        Synth_Run();
+        FakeSynthTimer_Interrupt(); 
+    }
 }
 
 TEST(Synth, OpenAndClose)
@@ -226,12 +236,120 @@ TEST(Synth, PressC4IncrementsDACBy12ForHalfPeriod)
 TEST(Synth, PressC4DecrementDACBy12AfterHalfPeriod)
 {
     Synth_Press(C4);
-    for (int i = 0; i < 63; i++)
-    {
-        Synth_Run();
-        FakeSynthTimer_Interrupt();
-    }
+    runSynthCycles(63);
 
     checkDACForNewWriteAndValue(128-12);
 
 }
+
+TEST(Synth, ReleaseC4KeyReturnsDACtoMidLevel)
+{
+    Synth_Press(C4);
+    runSynthCycles(2);
+
+    checkDACForNewWriteAndValue(140);
+
+    Synth_Release(C4);
+    runSynthCycles(2);
+
+    checkDACForNewWriteAndValue(128);
+}
+
+TEST(Synth, ReleaseAndPressKeyResetsSignalProgression)
+{
+    Synth_Press(C4);
+    runSynthCycles(65);
+
+    Synth_Release(C4);
+    runSynthCycles(2);
+    Synth_Press(C4);
+    runSynthCycles(2);
+
+    checkDACForNewWriteAndValue(140);
+}
+
+TEST(Synth, KeepKeyPressedRepeatsSignalOnDAC)
+{
+    Synth_Press(C4);
+    runSynthCycles(2);
+    checkDACForNewWriteAndValue(128+12);
+
+    runSynthCycles(63);
+    checkDACForNewWriteAndValue(128-12);
+
+    runSynthCycles(63);
+    checkDACForNewWriteAndValue(128+12);
+
+    runSynthCycles(63);
+    checkDACForNewWriteAndValue(128-12);
+}
+
+//TEST(Synth, PressD4)
+//{
+//    Synth_Press(D4);
+//    runSynthCycles(55);
+//
+//    checkDACForNewWriteAndValue(128 + 12);
+//
+//    runSynthCycles(1);
+//    checkDACForNewWriteAndValue(128 - 12);
+//}
+//
+//TEST(Synth, PressE4)
+//{
+//    Synth_Press(D4);
+//    runSynthCycles(55);
+//
+//    checkDACForNewWriteAndValue(128 + 12);
+//
+//    runSynthCycles(1);
+//    checkDACForNewWriteAndValue(128 - 12);
+//}
+//
+//
+//TEST(Synth, PressF4)
+//{
+//    Synth_Press(D4);
+//    runSynthCycles(55);
+//
+//    checkDACForNewWriteAndValue(128 + 12);
+//
+//    runSynthCycles(1);
+//    checkDACForNewWriteAndValue(128 - 12);
+//}
+//
+//
+//TEST(Synth, PressG4)
+//{
+//    Synth_Press(D4);
+//    runSynthCycles(55);
+//
+//    checkDACForNewWriteAndValue(128 + 12);
+//
+//    runSynthCycles(1);
+//    checkDACForNewWriteAndValue(128 - 12);
+//}
+//
+//
+//TEST(Synth, PressA4)
+//{
+//    Synth_Press(D4);
+//    runSynthCycles(55);
+//
+//    checkDACForNewWriteAndValue(128 + 12);
+//
+//    runSynthCycles(1);
+//    checkDACForNewWriteAndValue(128 - 12);
+//}
+//
+//TEST(Synth, PressB4)
+//{
+//    Synth_Press(D4);
+//    runSynthCycles(55);
+//
+//    checkDACForNewWriteAndValue(128 + 12);
+//
+//    runSynthCycles(1);
+//    checkDACForNewWriteAndValue(128 - 12);
+//}
+

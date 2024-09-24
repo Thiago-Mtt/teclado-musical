@@ -75,6 +75,11 @@ void Synth_Press(Note note)
     squareKeys[note].pressed = true;
 }
 
+void Synth_Release(Note note)
+{
+    squareKeys[note].pressed = false;
+}
+
 
 static void processKeys (void)
 {
