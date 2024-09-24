@@ -21,14 +21,15 @@
  * Novas escritas no DAC por interrupção são 128 enquanto não há teclas pressionadas            OK
  * Pressionar tecla gera aumento de 12 na escrita do DAC (140 no DAC)                           OK
  *      (127/8 < 12, excursão positiva/negativa suficiente para todos os botoes)                
- * Nova tecla só é processada após a interrupção do timer                                       
+ * Nova tecla só é processada após a interrupção do timer                                       OK
  *      Processamento do próximo valor do DAC só é feito após interrupção
  *      Novo valor só aparece no DAC após uma outra interrupção
  * Interrupção do Timer é desabilitada ao verificar se é tempo de processar novo valor DAC      OK
  * Interrupção do Timer é desabilitada enquanto se escreve em memoria compartilhada             OK
- * Após um numero de interrupções + execuções do modulo, tecla adiciona -12 a escrita do DAC    
+ * Pressionar tecla mantem escrita em 140 por meio periodo da tecla                             OK?
+ * Após um numero de interrupções + execuções do modulo, tecla adiciona -12 a escrita do DAC    OK?
  *      Após 123 interrupções para a nota C4 (261Hz) considerando sampling de 32Khz
- * Soltar tecla desativa sua influencia no DAC
+ * Soltar tecla desativa sua influencia no DAC  
  * Pressionar tecla novamente reinicia progressao da tecla
  * Testar para as 8 teclas isoladas
  *      C4, D4, E4, F4, G4, A4, B4, C5
@@ -208,7 +209,29 @@ TEST(Synth, ProcessNextDACValueOnlyAfterDACWrite)
     checkDACForNewWriteAndValue(140); // C4 contabilizado, mas não D4
 }
 
-//TEST(Synth, PressC4DecrementDACBy12AfterHalfPeriod)
-//{
-//    
-//}
+TEST(Synth, PressC4IncrementsDACBy12ForHalfPeriod)
+{
+    Synth_Press(C4);
+    Synth_Run();
+    FakeSynthTimer_Interrupt();
+
+    for (int i = 0; i < 61; i++)
+    {
+        Synth_Run();
+        FakeSynthTimer_Interrupt();
+        checkDACForNewWriteAndValue(140);
+    }
+}
+
+TEST(Synth, PressC4DecrementDACBy12AfterHalfPeriod)
+{
+    Synth_Press(C4);
+    for (int i = 0; i < 63; i++)
+    {
+        Synth_Run();
+        FakeSynthTimer_Interrupt();
+    }
+
+    checkDACForNewWriteAndValue(128-12);
+
+}

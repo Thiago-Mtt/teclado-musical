@@ -14,4 +14,6 @@ TEST_GROUP_RUNNER(Synth)
   RUN_TEST_CASE(Synth, PauseTimerInterruptOnCheckingIfIsTimeToProcessNextDAC);
   RUN_TEST_CASE(Synth, PauseTimerInterruptOnNextDACValueUpdate);
   RUN_TEST_CASE(Synth, ProcessNextDACValueOnlyAfterDACWrite);
+  RUN_TEST_CASE(Synth, PressC4IncrementsDACBy12ForHalfPeriod);
+  RUN_TEST_CASE(Synth, PressC4DecrementDACBy12AfterHalfPeriod);
 }

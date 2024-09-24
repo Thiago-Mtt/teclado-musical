@@ -7,12 +7,25 @@
 typedef struct 
 {
     bool pressed;
-    unsigned int counterMax;
+    unsigned int period;
     unsigned int counter;
+    signed char  amplitude;
 }SquareWaveKey;
 
 
 const unsigned char dacMidLevel = 128;
+const double samplingFrequency  = 32000;
+
+const double notesFrequencies[KEYS_SIZE] = 
+{   261.63, /*C4*/
+    293.66, /*D4*/
+    329.63, /*E4*/
+    349.23, /*F4*/
+    392.00, /*G4*/
+    440.00, /*A4*/
+    466.16, /*B4*/
+    493.88  /*C5*/
+};
 
 static SquareWaveKey squareKeys[KEYS_SIZE];
 
@@ -30,8 +43,10 @@ static void initKeys(void)
     for (int i = 0; i < KEYS_SIZE; i++)
     {
         squareKeys[i].pressed = false;
+        squareKeys[i].counter = 0;
+        squareKeys[i].period = (unsigned int)(samplingFrequency/notesFrequencies[i]);
+        squareKeys[i].amplitude = 0;
     }
-    
 }
 
 void Synth_Open(void)
@@ -60,6 +75,29 @@ void Synth_Press(Note note)
     squareKeys[note].pressed = true;
 }
 
+
+static void processKeys (void)
+{
+    for (int i = 0; i < KEYS_SIZE; i++)
+    {
+        if(!squareKeys[i].pressed)
+        {
+            squareKeys[i].counter = 0;
+            squareKeys[i].amplitude = 0;
+            continue;
+        } 
+
+        if (squareKeys[i].counter >= squareKeys[i].period/2)
+        {
+            squareKeys[i].amplitude = -12;
+        }
+        else squareKeys[i].amplitude = 12;
+
+        squareKeys[i].counter++;
+        squareKeys[i].counter = squareKeys[i].counter % squareKeys[i].period;
+    }
+}
+
 void Synth_Run(void)
 {
     int signalSumBuffer = 0;
@@ -71,12 +109,11 @@ void Synth_Run(void)
 
     if (!isTimeForProcess) return;
 
+    processKeys();
+
     for (int i = 0; i < KEYS_SIZE; i++)
     {
-        if (squareKeys[i].pressed == true)
-        {
-            signalSumBuffer += 12;
-        }
+        signalSumBuffer += squareKeys[i].amplitude;
     }
 
     if (signalSumBuffer > 127) signalSumBuffer = 127;
