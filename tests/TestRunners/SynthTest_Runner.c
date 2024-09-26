@@ -19,5 +19,13 @@ TEST_GROUP_RUNNER(Synth)
   RUN_TEST_CASE(Synth, ReleaseC4KeyReturnsDACtoMidLevel);
   RUN_TEST_CASE(Synth, ReleaseAndPressKeyResetsSignalProgression);
   RUN_TEST_CASE(Synth, KeepKeyPressedRepeatsSignalOnDAC);
-  //RUN_TEST_CASE(Synth, PressD4);
+  RUN_TEST_CASE(Synth, PressD4);
+  RUN_TEST_CASE(Synth, PressE4);
+  RUN_TEST_CASE(Synth, PressF4);
+  RUN_TEST_CASE(Synth, PressG4);
+  RUN_TEST_CASE(Synth, PressA4);
+  RUN_TEST_CASE(Synth, PressB4);
+  RUN_TEST_CASE(Synth, PressC5);
+  RUN_TEST_CASE(Synth, PressTwoKeysSumsTheirSignals);
+  RUN_TEST_CASE(Synth, PressTwoKeysAndReleasingOneRemovesOnlyOneKey);
 }
