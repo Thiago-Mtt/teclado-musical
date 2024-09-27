@@ -2,7 +2,7 @@
 #define D_SYNTH_H
 
 typedef enum
-{ C4, D4, E4, F4, G4, A4, B4, C5, KEYS_SIZE}
+{ Note_C4, Note_D4, Note_E4, Note_F4, Note_G4, Note_A4, Note_B4, Note_C5, KEYS_SIZE}
 Note;
 
 void Synth_Open(void);

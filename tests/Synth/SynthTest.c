@@ -165,7 +165,7 @@ TEST(Synth, PressC4IncrementsDACBy12)
 {
     FakeSynthDAC_ClearLastWrite();
 
-    Synth_Press(C4);
+    Synth_Press(Note_C4);
     checkDACForNoNewWrite();
 
     FakeSynthTimer_Interrupt();
@@ -206,14 +206,14 @@ TEST(Synth, PauseTimerInterruptOnNextDACValueUpdate)
 TEST(Synth, ProcessNextDACValueOnlyAfterDACWrite)
 {
     FakeSynthDAC_ClearLastWrite();
-    Synth_Press(C4);
+    Synth_Press(Note_C4);
     Synth_Run();
     FakeSynthTimer_Interrupt();
 
     checkDACForNewWriteAndValue(128); // C4 não contabilizado
 
     Synth_Run();
-    Synth_Press(D4);
+    Synth_Press(Note_D4);
     Synth_Run();
     FakeSynthTimer_Interrupt();
     checkDACForNewWriteAndValue(140); // C4 contabilizado, mas não D4
@@ -221,7 +221,7 @@ TEST(Synth, ProcessNextDACValueOnlyAfterDACWrite)
 
 TEST(Synth, PressC4IncrementsDACBy12ForHalfPeriod)
 {
-    Synth_Press(C4);
+    Synth_Press(Note_C4);
     Synth_Run();
     FakeSynthTimer_Interrupt();
 
@@ -235,7 +235,7 @@ TEST(Synth, PressC4IncrementsDACBy12ForHalfPeriod)
 
 TEST(Synth, PressC4DecrementDACBy12AfterHalfPeriod)
 {
-    Synth_Press(C4);
+    Synth_Press(Note_C4);
     runSynthCycles(63);
 
     checkDACForNewWriteAndValue(128-12);
@@ -244,12 +244,12 @@ TEST(Synth, PressC4DecrementDACBy12AfterHalfPeriod)
 
 TEST(Synth, ReleaseC4KeyReturnsDACtoMidLevel)
 {
-    Synth_Press(C4);
+    Synth_Press(Note_C4);
     runSynthCycles(2);
 
     checkDACForNewWriteAndValue(140);
 
-    Synth_Release(C4);
+    Synth_Release(Note_C4);
     runSynthCycles(2);
 
     checkDACForNewWriteAndValue(128);
@@ -257,12 +257,12 @@ TEST(Synth, ReleaseC4KeyReturnsDACtoMidLevel)
 
 TEST(Synth, ReleaseAndPressKeyResetsSignalProgression)
 {
-    Synth_Press(C4);
+    Synth_Press(Note_C4);
     runSynthCycles(65);
 
-    Synth_Release(C4);
+    Synth_Release(Note_C4);
     runSynthCycles(2);
-    Synth_Press(C4);
+    Synth_Press(Note_C4);
     runSynthCycles(2);
 
     checkDACForNewWriteAndValue(140);
@@ -270,7 +270,7 @@ TEST(Synth, ReleaseAndPressKeyResetsSignalProgression)
 
 TEST(Synth, KeepKeyPressedRepeatsSignalOnDAC)
 {
-    Synth_Press(C4);
+    Synth_Press(Note_C4);
     runSynthCycles(2);
     checkDACForNewWriteAndValue(128+12);
 
@@ -286,7 +286,7 @@ TEST(Synth, KeepKeyPressedRepeatsSignalOnDAC)
 
 TEST(Synth, PressD4)
 {
-    Synth_Press(D4);
+    Synth_Press(Note_D4);
     runSynthCycles(55);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -297,7 +297,7 @@ TEST(Synth, PressD4)
 
 TEST(Synth, PressE4)
 {
-    Synth_Press(E4);
+    Synth_Press(Note_E4);
     runSynthCycles(49);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -309,7 +309,7 @@ TEST(Synth, PressE4)
 
 TEST(Synth, PressF4)
 {
-    Synth_Press(F4);
+    Synth_Press(Note_F4);
     runSynthCycles(46);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -321,7 +321,7 @@ TEST(Synth, PressF4)
 
 TEST(Synth, PressG4)
 {
-    Synth_Press(G4);
+    Synth_Press(Note_G4);
     runSynthCycles(41);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -333,7 +333,7 @@ TEST(Synth, PressG4)
 
 TEST(Synth, PressA4)
 {
-    Synth_Press(A4);
+    Synth_Press(Note_A4);
     runSynthCycles(37);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -344,7 +344,7 @@ TEST(Synth, PressA4)
 
 TEST(Synth, PressB4)
 {
-    Synth_Press(B4);
+    Synth_Press(Note_B4);
     runSynthCycles(35);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -355,7 +355,7 @@ TEST(Synth, PressB4)
 
 TEST(Synth, PressC5)
 {
-    Synth_Press(C5);
+    Synth_Press(Note_C5);
     runSynthCycles(33);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -366,8 +366,8 @@ TEST(Synth, PressC5)
 
 TEST(Synth, PressTwoKeysSumsTheirSignals)
 {
-    Synth_Press(C4);
-    Synth_Press(D4);
+    Synth_Press(Note_C4);
+    Synth_Press(Note_D4);
     runSynthCycles(2);
     
     checkDACForNewWriteAndValue(128+12+12);
@@ -381,13 +381,13 @@ TEST(Synth, PressTwoKeysSumsTheirSignals)
 
 TEST(Synth, PressTwoKeysAndReleasingOneRemovesOnlyOneKey)
 {
-    Synth_Press(C4);
-    Synth_Press(D4);
+    Synth_Press(Note_C4);
+    Synth_Press(Note_D4);
     runSynthCycles(4);
     
     checkDACForNewWriteAndValue(128+12+12);
 
-    Synth_Release(C4);
+    Synth_Release(Note_C4);
     runSynthCycles(2);
     checkDACForNewWriteAndValue(128+12);
 }

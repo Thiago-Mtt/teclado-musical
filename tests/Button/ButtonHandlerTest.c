@@ -70,7 +70,7 @@ TEST(ButtonHandler, ButtonsInitializedAsOpen)
     {
         ButtonHandler_GetButtonState(i, &state);
 
-        TEST_ASSERT(state == open);
+        TEST_ASSERT(state == opened);
     }
 }
 
@@ -80,7 +80,7 @@ TEST(ButtonHandler, ButtonsOutOfRangeReadErrorValue)
 
     ButtonHandler_GetButtonState(NUMBER_OF_BUTTONS, &state);
 
-    TEST_ASSERT(state == error);
+    TEST_ASSERT(state == errorState);
 }
 
 TEST(ButtonHandler, ButtonPressedChangesStateToPressed)
@@ -106,7 +106,7 @@ TEST(ButtonHandler, ButtonReleaseChangesStateToOpen)
     ButtonHandler_Run();
     ButtonHandler_GetButtonState(button, &state);
 
-    TEST_ASSERT(state == open);
+    TEST_ASSERT(state == opened);
 }
 
 TEST(ButtonHandler, ManyButtonsPressedChangesStatesToPressed)
@@ -128,7 +128,7 @@ TEST(ButtonHandler, ManyButtonsPressedChangesStatesToPressed)
     for (int i = NUMBER_OF_BUTTONS - 3; i < (NUMBER_OF_BUTTONS); i++)
     {
         ButtonHandler_GetButtonState(i, &state);
-        TEST_ASSERT(state == open);
+        TEST_ASSERT(state == opened);
     }
 }
 
@@ -153,7 +153,7 @@ TEST(ButtonHandler, ManyButtonsPressedThenReleasedChangesStatesToOpen)
     for (int i = 0; i < (NUMBER_OF_BUTTONS - 3); i++)
     {
         ButtonHandler_GetButtonState(i, &state);
-        TEST_ASSERT(state == open);
+        TEST_ASSERT(state == opened);
     }
 }
 
@@ -207,7 +207,7 @@ TEST(ButtonHandler, DetectButtonChangeFromPressedToOpen)
     ButtonHandler_Run();
     change = ButtonHandler_GetButtonState(0, &state);
 
-    TEST_ASSERT(state == open);
+    TEST_ASSERT(state == opened);
     TEST_ASSERT(change);
 }
 
@@ -226,7 +226,7 @@ TEST(ButtonHandler, ReturnNoChangeAfterSecondButtonOpenRead)
     change = ButtonHandler_GetButtonState(0, &state);
     change = ButtonHandler_GetButtonState(0, &state);
 
-    TEST_ASSERT(state == open);
+    TEST_ASSERT(state == opened);
     TEST_ASSERT(!change);
 }
 

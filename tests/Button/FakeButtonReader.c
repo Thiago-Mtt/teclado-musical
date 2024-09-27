@@ -10,7 +10,7 @@ void ButtonReader_Open(void)
 
     for (int i = 0; i < NUMBER_OF_BUTTONS; i++)
     {
-        buttonStates[i] = open;
+        buttonStates[i] = opened;
     }
 }
 
@@ -37,5 +37,5 @@ void FakeButtonReader_PressButton(unsigned int button)
 
 void FakeButtonReader_ReleaseButton(unsigned int button)
 {
-    buttonStates[button] = open;
+    buttonStates[button] = opened;
 }

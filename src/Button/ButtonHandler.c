@@ -10,7 +10,7 @@ void ButtonHandler_Open (void)
 
     for (int i = 0; i < NUMBER_OF_BUTTONS; i++)
     {
-        buttonStates[i] = open;
+        buttonStates[i] = opened;
         changedStates[i] = 0;
     }
     
@@ -26,7 +26,7 @@ int ButtonHandler_GetButtonState (unsigned int button, ButtonState * state)
     int changed = 0;
     if (button >= NUMBER_OF_BUTTONS)
     {
-        *state = error;
+        *state = errorState;
         return 0;
     }
 
