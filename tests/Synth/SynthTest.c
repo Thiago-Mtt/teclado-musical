@@ -345,7 +345,7 @@ TEST(Synth, PressA4)
 TEST(Synth, PressB4)
 {
     Synth_Press(Note_B4);
-    runSynthCycles(35);
+    runSynthCycles(33);
 
     checkDACForNewWriteAndValue(128 + 12);
 
@@ -356,7 +356,7 @@ TEST(Synth, PressB4)
 TEST(Synth, PressC5)
 {
     Synth_Press(Note_C5);
-    runSynthCycles(33);
+    runSynthCycles(31);
 
     checkDACForNewWriteAndValue(128 + 12);
 

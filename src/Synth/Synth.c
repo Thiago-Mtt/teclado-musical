@@ -23,8 +23,8 @@ const double notesFrequencies[KEYS_SIZE] =
     349.23, /*F4*/
     392.00, /*G4*/
     440.00, /*A4*/
-    466.16, /*B4*/
-    493.88  /*C5*/
+    493.88, /*B4*/
+    523.25  /*C5*/
 };
 
 static SquareWaveKey squareKeys[KEYS_SIZE];
