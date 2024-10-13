@@ -28,4 +28,7 @@ TEST_GROUP_RUNNER(Synth)
   RUN_TEST_CASE(Synth, PressC5);
   RUN_TEST_CASE(Synth, PressTwoKeysSumsTheirSignals);
   RUN_TEST_CASE(Synth, PressTwoKeysAndReleasingOneRemovesOnlyOneKey);
+  RUN_TEST_CASE(Synth, CheckSampleKeyValueC4);
+  RUN_TEST_CASE(Synth, CheckSampleyKeyAmplitudeC4);
+  RUN_TEST_CASE(Synth, PrintSampleSignalKeyTypeC4);
 }
