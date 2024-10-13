@@ -53,6 +53,7 @@ TEST_GROUP(Synth);
 TEST_SETUP(Synth)
 {
     Synth_Open();
+    Synth_SetKeys(squareSignal);
 }
 
 TEST_TEAR_DOWN(Synth)
@@ -395,6 +396,7 @@ TEST(Synth, PressTwoKeysAndReleasingOneRemovesOnlyOneKey)
 IGNORE_TEST(Synth, CheckSampleKeyValueC4)
 {
     SampleWaveKey c4Key;
+    Synth_SetKeys(sampleSignal);
     c4Key = Synth_GetNoteSampleWaveKey(Note_C4);
 
     printf("\nC4 periodSize: %d", c4Key.periodSize);
@@ -406,6 +408,7 @@ IGNORE_TEST(Synth, CheckSampleyKeyAmplitudeC4)
 {
     SampleWaveKey c4Key;
     int index;
+    Synth_SetKeys(sampleSignal);
 
     
     Synth_Press(Note_C4);
@@ -428,6 +431,23 @@ IGNORE_TEST(Synth, PrintSampleSignalKeyTypeC4)
     for (index = 0; index < 130; index++)
     {
         printf("\n Index: %d    NextDACValue: %d", index, Synth_GetNextDACValue());
+        runSynthCycles(1);
+    }
+}
+
+IGNORE_TEST(Synth, CheckSampleyKeyAmplitudeADSRC4)
+{
+    SampleWaveKey c4Key;
+    int index;
+    Synth_SetKeys(sampleSignal);
+
+    
+    Synth_Press(Note_C4);
+
+    for (index = 0; index < 1000; index++)
+    {
+        c4Key = Synth_GetNoteSampleWaveKey(Note_C4);
+        printf("\n Index: %d  C4Pressed: %d     C4ADSR: %f   C4 Amplitude: %f   C4TickCounter: %ld", index, c4Key.pressed, c4Key.ADSRGain,c4Key.amplitude, c4Key.tickCounter);
         runSynthCycles(1);
     }
 }

@@ -811,6 +811,8 @@ static void initKeys(void)
         sampleKeys[i].periodSize = sampleSizes[i];
         sampleKeys[i].samples = noteSamples[i];
         sampleKeys[i].amplitude = 0;
+        sampleKeys[i].tickCounter = 0;
+        sampleKeys[i].ADSRGain = 0;
     }
 }
 
@@ -871,6 +873,28 @@ static void processKeys (void)
     }
 }
 
+static void processSampleADSR (SampleWaveKey * key)
+{
+    /* Processar proximo valor do ADSR usando duas curvas exponenciais */
+    /* Uma para ataque e outra para queda */
+    float keyTime = key->tickCounter / samplingFrequency;
+    float attackTarget = 1;
+    float attackGain = 0.01;
+    float decayTarget = 0;
+    float decayGain = 0.00006;
+
+    if (keyTime < 0.02) /* Ataque */
+    {
+        key->ADSRGain = attackTarget*attackGain + (1.0 - attackGain)*(key->ADSRGain);
+    }
+    else                /* Decaimento */
+    {
+        key->ADSRGain = decayTarget*decayGain + (1.0 - decayGain)*key->ADSRGain;
+    }
+
+    key->tickCounter++;
+}
+
 static void processSampleKeys (void)
 {
     int i = 0;
@@ -880,10 +904,14 @@ static void processSampleKeys (void)
         {
             sampleKeys[i].periodCounter = 0;
             sampleKeys[i].amplitude = 0;
+            sampleKeys[i].ADSRGain = 0;
+            sampleKeys[i].tickCounter = 0;
             continue;
         } 
 
+        processSampleADSR(&sampleKeys[i]);
         sampleKeys[i].amplitude = sampleKeys[i].samples[sampleKeys[i].periodCounter];
+        sampleKeys[i].amplitude *= sampleKeys[i].ADSRGain;
 
         sampleKeys[i].periodCounter++;
         sampleKeys[i].periodCounter = sampleKeys[i].periodCounter % sampleKeys[i].periodSize;

@@ -26,6 +26,8 @@ typedef struct
     unsigned int periodCounter;
     float * samples;
     float amplitude;
+    unsigned long tickCounter;
+    float ADSRGain;
 }SampleWaveKey;
 
 void Synth_Open(void);
