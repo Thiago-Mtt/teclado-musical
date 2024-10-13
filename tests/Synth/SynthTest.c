@@ -451,3 +451,19 @@ IGNORE_TEST(Synth, CheckSampleyKeyAmplitudeADSRC4)
         runSynthCycles(1);
     }
 }
+
+IGNORE_TEST(Synth, CheckSampleyKeyAmplitudeADSRMultipleKeys)
+{
+    int index;
+    Synth_SetKeys(sampleSignal);
+
+    Synth_Press(Note_C4);
+    Synth_Press(Note_E4);
+    Synth_Press(Note_G4);
+
+    for (index = 0; index < 1000; index++)
+    {
+        printf("\n Index: %d    NextDACValue: %d", index, Synth_GetNextDACValue());
+        runSynthCycles(1);
+    }
+}

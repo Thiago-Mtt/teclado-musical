@@ -32,4 +32,5 @@ TEST_GROUP_RUNNER(Synth)
   RUN_TEST_CASE(Synth, CheckSampleyKeyAmplitudeC4);
   RUN_TEST_CASE(Synth, PrintSampleSignalKeyTypeC4);
   RUN_TEST_CASE(Synth, CheckSampleyKeyAmplitudeADSRC4);
+  RUN_TEST_CASE(Synth, CheckSampleyKeyAmplitudeADSRMultipleKeys);
 }

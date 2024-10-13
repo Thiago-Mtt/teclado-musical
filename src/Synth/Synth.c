@@ -918,10 +918,24 @@ static void processSampleKeys (void)
     }
 }
 
+static float getActiveSampleKeys (void)
+{
+    int i = 0;
+    float totalActive = 0;
+    for ( i = 0; i < KEYS_SIZE; i++)
+    {
+        if (sampleKeys[i].pressed ==  true) totalActive += 1;
+    }
+
+    return totalActive;
+}
+
 void Synth_Run(void)
 {
     int signalSumBuffer = 0;
     float floatSignalSumBuffer = 0;
+    float compressedSignalSumBuffer = 0;
+    float compressionCoefficient = 1;
     bool isTimeForProcess = false;
 
     SynthTimer_DisableInterrupt();
@@ -941,7 +955,9 @@ void Synth_Run(void)
 
     if (currentKeyType == sampleSignal)
     {
-        signalSumBuffer = (int)(floatSignalSumBuffer * 127.0);
+        compressionCoefficient = 1.0/(getActiveSampleKeys()); /* Dividir 1 por N^(4/5) para ter melhor qualidade */
+        compressedSignalSumBuffer = (floatSignalSumBuffer * 127.0) * compressionCoefficient;
+        signalSumBuffer = (int)compressedSignalSumBuffer;
     }
 
     if (signalSumBuffer > 127) signalSumBuffer = 127;
