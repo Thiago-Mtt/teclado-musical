@@ -963,6 +963,7 @@ static float getActiveSampleKeys (void)
         if (sampleKeys[i].pressed ==  true) totalActive += 1;
     }
 
+    if (totalActive == 0) return 1;
     return totalActive;
 }
 
