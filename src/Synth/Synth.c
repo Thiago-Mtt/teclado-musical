@@ -4,6 +4,8 @@
 
 #include <stdbool.h>
 
+#define FIXED_POINT_COEF 10000
+
 static unsigned int sampleSizes[] =
 {
     123, /* C4 */
@@ -771,9 +773,9 @@ static float * noteSamples[] =
 static bool currentKeyType;
 
 const unsigned char dacMidLevel = 128;
-const double samplingFrequency  = 32000;
+const float samplingFrequency  = 32000;
 
-const double notesFrequencies[KEYS_SIZE] = 
+const float notesFrequencies[KEYS_SIZE] = 
 {   261.63, /*C4*/
     293.66, /*D4*/
     329.63, /*E4*/
@@ -782,7 +784,7 @@ const double notesFrequencies[KEYS_SIZE] =
     440.00, /*A4*/
     493.88, /*B4*/
     523.25  /*C5*/
-};
+}; 
 
 static SquareWaveKey squareKeys[KEYS_SIZE];
 
@@ -797,6 +799,15 @@ static void updateDAC (void)
     processNextDAC = true;
 }
 
+static void fixedPointConvert (int32_t * fixedSamples ,float * floatSamples, unsigned int sampleSize)
+{
+    unsigned int index;
+    for (index = 0; index < sampleSize; index++)
+    {
+        fixedSamples[index] = (int32_t)(floatSamples[index] * FIXED_POINT_COEF);
+    }
+}
+
 static void initKeys(void)
 {
     for (int i = 0; i < KEYS_SIZE; i++)
@@ -809,7 +820,7 @@ static void initKeys(void)
         sampleKeys[i].pressed = false;
         sampleKeys[i].periodCounter = 0;
         sampleKeys[i].periodSize = sampleSizes[i];
-        sampleKeys[i].samples = noteSamples[i];
+        fixedPointConvert(sampleKeys[i].samples, noteSamples[i], sampleSizes[i]);
         sampleKeys[i].amplitude = 0;
         sampleKeys[i].tickCounter = 0;
         sampleKeys[i].ADSRGain = 0;
@@ -851,7 +862,7 @@ void Synth_Release(Note note)
 }
 
 
-static void processKeys (void)
+static void processSquareKeys (void)
 {
     for (int i = 0; i < KEYS_SIZE; i++)
     {
@@ -873,23 +884,47 @@ static void processKeys (void)
     }
 }
 
+static const int32_t attackTarget  =(int32_t)(1        * FIXED_POINT_COEF);
+static const int32_t attackGain    =(int32_t)( 0.01    * FIXED_POINT_COEF);
+
+static const int32_t decayTarget   =(int32_t)( 0       * FIXED_POINT_COEF);
+// Trocar valor de 0.00006 por 0.0001 para entrar na conversão de ponto fixo
+static const int32_t decayGain     =(int32_t)( 0.0001 * FIXED_POINT_COEF);   
+
 static void processSampleADSR (SampleWaveKey * key)
 {
     /* Processar proximo valor do ADSR usando duas curvas exponenciais */
     /* Uma para ataque e outra para queda */
     float keyTime = key->tickCounter / samplingFrequency;
-    float attackTarget = 1;
-    float attackGain = 0.01;
-    float decayTarget = 0;
-    float decayGain = 0.00006;
+    int32_t auxiliar, oldADSRGain;
 
+    oldADSRGain = key->ADSRGain;
     if (keyTime < 0.02) /* Ataque */
-    {
-        key->ADSRGain = attackTarget*attackGain + (1.0 - attackGain)*(key->ADSRGain);
+    {   
+        /* Função original */
+        /* key->ADSRGain = attackTarget*attackGain + (1.0 - attackGain)*(key->ADSRGain); */
+
+        key->ADSRGain = attackTarget*attackGain;
+        key->ADSRGain = key->ADSRGain / FIXED_POINT_COEF;
+
+        auxiliar = (1 * FIXED_POINT_COEF) - attackGain;
+        auxiliar = auxiliar * oldADSRGain;
+        auxiliar = auxiliar / FIXED_POINT_COEF;
+
+        key->ADSRGain = key->ADSRGain + auxiliar;
     }
     else                /* Decaimento */
     {
-        key->ADSRGain = decayTarget*decayGain + (1.0 - decayGain)*key->ADSRGain;
+        /* Equação original */
+        /* key->ADSRGain = decayTarget*decayGain + (1.0 - decayGain)*key->ADSRGain; */
+        key->ADSRGain = decayTarget*attackGain;
+        key->ADSRGain = key->ADSRGain / FIXED_POINT_COEF;
+
+        auxiliar = (1 * FIXED_POINT_COEF) - decayGain;
+        auxiliar = auxiliar * oldADSRGain;
+        auxiliar = auxiliar / FIXED_POINT_COEF;
+
+        key->ADSRGain = key->ADSRGain + auxiliar;
     }
 
     key->tickCounter++;
@@ -912,6 +947,7 @@ static void processSampleKeys (void)
         processSampleADSR(&sampleKeys[i]);
         sampleKeys[i].amplitude = sampleKeys[i].samples[sampleKeys[i].periodCounter];
         sampleKeys[i].amplitude *= sampleKeys[i].ADSRGain;
+        sampleKeys[i].amplitude = sampleKeys[i].amplitude/FIXED_POINT_COEF;
 
         sampleKeys[i].periodCounter++;
         sampleKeys[i].periodCounter = sampleKeys[i].periodCounter % sampleKeys[i].periodSize;
@@ -933,7 +969,12 @@ static float getActiveSampleKeys (void)
 void Synth_Run(void)
 {
     int signalSumBuffer = 0;
-    float floatSignalSumBuffer = 0;
+
+    int squareSignalSumBuffer = 0;
+
+    int32_t SampleSignalSumBuffer = 0;
+    float   floatSampleSignalSumBuffer = 0;
+
     float compressedSignalSumBuffer = 0;
     float compressionCoefficient = 1;
     bool isTimeForProcess = false;
@@ -944,21 +985,23 @@ void Synth_Run(void)
 
     if (!isTimeForProcess) return;
 
-    processKeys();
+    processSquareKeys();
     processSampleKeys();
 
     for (int i = 0; i < KEYS_SIZE; i++)
     {
-        signalSumBuffer += squareKeys[i].amplitude;
-        floatSignalSumBuffer += sampleKeys[i].amplitude;
+        squareSignalSumBuffer += squareKeys[i].amplitude;
+        SampleSignalSumBuffer += sampleKeys[i].amplitude;
     }
 
     if (currentKeyType == sampleSignal)
     {
+        floatSampleSignalSumBuffer = ((float)SampleSignalSumBuffer)/FIXED_POINT_COEF;
         compressionCoefficient = 1.0/(getActiveSampleKeys()); /* Dividir 1 por N^(4/5) para ter melhor qualidade */
-        compressedSignalSumBuffer = (floatSignalSumBuffer * 127.0) * compressionCoefficient;
+        compressedSignalSumBuffer = (floatSampleSignalSumBuffer * 127.0) * compressionCoefficient;
         signalSumBuffer = (int)compressedSignalSumBuffer;
     }
+    else if (currentKeyType == squareSignal) signalSumBuffer = squareSignalSumBuffer;
 
     if (signalSumBuffer > 127) signalSumBuffer = 127;
     if (signalSumBuffer < -127)signalSumBuffer = -127;

@@ -2,6 +2,9 @@
 #define D_SYNTH_H
 
 #include <stdbool.h>
+#include <stdint.h>
+
+#define NOTE_SAMPLES_MAX_SIZE 200
 
 typedef enum
 { squareSignal, sampleSignal}
@@ -24,10 +27,10 @@ typedef struct
     bool pressed;
     unsigned int periodSize;
     unsigned int periodCounter;
-    float * samples;
-    float amplitude;
+    int32_t samples[NOTE_SAMPLES_MAX_SIZE];
+    int32_t amplitude;
     unsigned long tickCounter;
-    float ADSRGain;
+    int32_t ADSRGain;
 }SampleWaveKey;
 
 void Synth_Open(void);
