@@ -862,8 +862,10 @@ void Synth_Release(Note note)
 }
 
 
-static void processSquareKeys (void)
+static int processSquareKeys (void)
 {
+    int squareSignalSumBuffer = 0;
+
     for (int i = 0; i < KEYS_SIZE; i++)
     {
         if(!squareKeys[i].pressed)
@@ -882,6 +884,13 @@ static void processSquareKeys (void)
         squareKeys[i].counter++;
         squareKeys[i].counter = squareKeys[i].counter % squareKeys[i].period;
     }
+
+    for (int i = 0; i < KEYS_SIZE; i++)
+    {
+        squareSignalSumBuffer += squareKeys[i].amplitude;
+    }
+
+    return squareSignalSumBuffer;
 }
 
 static const int32_t attackTarget  =(int32_t)(1        * FIXED_POINT_COEF);
@@ -930,8 +939,26 @@ static void processSampleADSR (SampleWaveKey * key)
     key->tickCounter++;
 }
 
-static void processSampleKeys (void)
+static float getActiveSampleKeys (void)
 {
+    int i = 0;
+    float totalActive = 0;
+    for ( i = 0; i < KEYS_SIZE; i++)
+    {
+        if (sampleKeys[i].pressed ==  true) totalActive += 1;
+    }
+
+    if (totalActive == 0) return 1;
+    return totalActive;
+}
+
+static int processSampleKeys (void)
+{
+    int32_t SampleSignalSumBuffer = 0;
+    float   floatSampleSignalSumBuffer = 0;
+    float   compressedSignalSumBuffer = 0;
+    float   compressionCoefficient = 1;
+
     int i = 0;
     for ( i = 0; i < KEYS_SIZE; i++)
     {
@@ -952,32 +979,21 @@ static void processSampleKeys (void)
         sampleKeys[i].periodCounter++;
         sampleKeys[i].periodCounter = sampleKeys[i].periodCounter % sampleKeys[i].periodSize;
     }
-}
 
-static float getActiveSampleKeys (void)
-{
-    int i = 0;
-    float totalActive = 0;
-    for ( i = 0; i < KEYS_SIZE; i++)
+    for (int i = 0; i < KEYS_SIZE; i++)
     {
-        if (sampleKeys[i].pressed ==  true) totalActive += 1;
+        SampleSignalSumBuffer += sampleKeys[i].amplitude;
     }
 
-    if (totalActive == 0) return 1;
-    return totalActive;
+    floatSampleSignalSumBuffer = ((float)SampleSignalSumBuffer)/FIXED_POINT_COEF;
+    compressionCoefficient = 1.0/(getActiveSampleKeys()); /* Dividir 1 por N^(4/5) para ter melhor qualidade */
+    compressedSignalSumBuffer = (floatSampleSignalSumBuffer * 127.0) * compressionCoefficient;
+    return ((int)compressedSignalSumBuffer);
 }
 
 void Synth_Run(void)
 {
     int signalSumBuffer = 0;
-
-    int squareSignalSumBuffer = 0;
-
-    int32_t SampleSignalSumBuffer = 0;
-    float   floatSampleSignalSumBuffer = 0;
-
-    float compressedSignalSumBuffer = 0;
-    float compressionCoefficient = 1;
     bool isTimeForProcess = false;
 
     SynthTimer_DisableInterrupt();
@@ -986,23 +1002,14 @@ void Synth_Run(void)
 
     if (!isTimeForProcess) return;
 
-    processSquareKeys();
-    processSampleKeys();
-
-    for (int i = 0; i < KEYS_SIZE; i++)
-    {
-        squareSignalSumBuffer += squareKeys[i].amplitude;
-        SampleSignalSumBuffer += sampleKeys[i].amplitude;
-    }
-
     if (currentKeyType == sampleSignal)
     {
-        floatSampleSignalSumBuffer = ((float)SampleSignalSumBuffer)/FIXED_POINT_COEF;
-        compressionCoefficient = 1.0/(getActiveSampleKeys()); /* Dividir 1 por N^(4/5) para ter melhor qualidade */
-        compressedSignalSumBuffer = (floatSampleSignalSumBuffer * 127.0) * compressionCoefficient;
-        signalSumBuffer = (int)compressedSignalSumBuffer;
+        signalSumBuffer = processSampleKeys();
     }
-    else if (currentKeyType == squareSignal) signalSumBuffer = squareSignalSumBuffer;
+    else if (currentKeyType == squareSignal)
+    {
+        signalSumBuffer = processSquareKeys();
+    }
 
     if (signalSumBuffer > 127) signalSumBuffer = 127;
     if (signalSumBuffer < -127)signalSumBuffer = -127;
