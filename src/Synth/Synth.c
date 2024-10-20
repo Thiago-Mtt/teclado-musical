@@ -898,8 +898,12 @@ static const int32_t attackTarget  =(int32_t)(1        * FIXED_POINT_COEF);
 static const int32_t attackGain    =(int32_t)( 0.01    * FIXED_POINT_COEF);
 
 static const int32_t decayTarget   =(int32_t)( 0       * FIXED_POINT_COEF);
-// Trocar valor de 0.00006 por 0.0001 para entrar na conversão de ponto fixo
-static const int32_t decayGain     =(int32_t)( 0.0001 * FIXED_POINT_COEF);   
+/* Trocar valor de 0.00006 por 0.0001 para entrar na conversão de ponto fixo */
+static const int32_t decayGain     =(int32_t)( 0.0001 * FIXED_POINT_COEF);
+/* Valor usado caso se queira usar um ganho de decaimento menor que 0.0001 */
+/* Número de vezes pelo qual o valor ADSR durante decaimento é o mesmo */
+/* Na média, o ganho de decaimento será decayGain / decaySkipCount     */
+static const unsigned int decaySkipCount = 1;
 
 static const float   attackTime = 0.02;         /* unidade em segundos */
 static const float   ADSRDecayMinimum = 0.01;   /* Valor minimo do ADSR durante decaimento antes de desligar tecla */
@@ -930,6 +934,12 @@ static void processSampleADSR (SampleWaveKey * key)
     {
         /* Equação original */
         /* key->ADSRGain = decayTarget*decayGain + (1.0 - decayGain)*key->ADSRGain; */
+        if (decaySkipCount > 1 && (key->tickCounter % decaySkipCount) != 0)
+        {
+            key->tickCounter++;
+            return;
+        }
+
         key->ADSRGain = decayTarget*decayGain;
         key->ADSRGain = key->ADSRGain / FIXED_POINT_COEF;
 
@@ -999,7 +1009,7 @@ static int processSampleKeys (void)
         fixedPointADSRDecayMinimum = (int32_t)(ADSRDecayMinimum * FIXED_POINT_COEF);
         if (keyTime > attackTime && (sampleKeys[i].ADSRGain <= fixedPointADSRDecayMinimum) )
         {
-            /* Desligar notas cujo volume já está baixo */
+            /* Desligar notas cujo volume já está baixo durante decaimento */
             sampleKeys[i].pressed = false;
             resetSampleKey(&sampleKeys[i]);
         }
