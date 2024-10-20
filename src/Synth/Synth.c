@@ -901,6 +901,9 @@ static const int32_t decayTarget   =(int32_t)( 0       * FIXED_POINT_COEF);
 // Trocar valor de 0.00006 por 0.0001 para entrar na conversão de ponto fixo
 static const int32_t decayGain     =(int32_t)( 0.0001 * FIXED_POINT_COEF);   
 
+static const float   attackTime = 0.02;         /* unidade em segundos */
+static const float   ADSRDecayMinimum = 0.01;   /* Valor minimo do ADSR durante decaimento antes de desligar tecla */
+
 static void processSampleADSR (SampleWaveKey * key)
 {
     /* Processar proximo valor do ADSR usando duas curvas exponenciais */
@@ -909,7 +912,7 @@ static void processSampleADSR (SampleWaveKey * key)
     int32_t auxiliar, oldADSRGain;
 
     oldADSRGain = key->ADSRGain;
-    if (keyTime < 0.02) /* Ataque */
+    if (keyTime < attackTime) /* Ataque */
     {   
         /* Função original */
         /* key->ADSRGain = attackTarget*attackGain + (1.0 - attackGain)*(key->ADSRGain); */
@@ -953,22 +956,29 @@ static float getActiveSampleKeys (void)
     return totalActive;
 }
 
+static void resetSampleKey(SampleWaveKey * key)
+{
+    key->periodCounter = 0;
+    key->amplitude = 0;
+    key->ADSRGain = 0;
+    key->tickCounter = 0;
+}
+
 static int processSampleKeys (void)
 {
     int32_t SampleSignalSumBuffer = 0;
     float   floatSampleSignalSumBuffer = 0;
     float   compressedSignalSumBuffer = 0;
     float   compressionCoefficient = 1;
+    float   keyTime;
+    int32_t fixedPointADSRDecayMinimum;
 
     int i = 0;
     for ( i = 0; i < KEYS_SIZE; i++)
     {
         if(!sampleKeys[i].pressed)
         {
-            sampleKeys[i].periodCounter = 0;
-            sampleKeys[i].amplitude = 0;
-            sampleKeys[i].ADSRGain = 0;
-            sampleKeys[i].tickCounter = 0;
+            resetSampleKey(&sampleKeys[i]);
             continue;
         } 
 
@@ -984,6 +994,15 @@ static int processSampleKeys (void)
     for (int i = 0; i < KEYS_SIZE; i++)
     {
         SampleSignalSumBuffer += sampleKeys[i].amplitude;
+
+        keyTime = sampleKeys[i].tickCounter / samplingFrequency;
+        fixedPointADSRDecayMinimum = (int32_t)(ADSRDecayMinimum * FIXED_POINT_COEF);
+        if (keyTime > attackTime && (sampleKeys[i].ADSRGain <= fixedPointADSRDecayMinimum) )
+        {
+            /* Desligar notas cujo volume já está baixo */
+            sampleKeys[i].pressed = false;
+            resetSampleKey(&sampleKeys[i]);
+        }
     }
 
     floatSampleSignalSumBuffer = ((float)SampleSignalSumBuffer)/FIXED_POINT_COEF;
