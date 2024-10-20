@@ -927,7 +927,7 @@ static void processSampleADSR (SampleWaveKey * key)
     {
         /* Equação original */
         /* key->ADSRGain = decayTarget*decayGain + (1.0 - decayGain)*key->ADSRGain; */
-        key->ADSRGain = decayTarget*attackGain;
+        key->ADSRGain = decayTarget*decayGain;
         key->ADSRGain = key->ADSRGain / FIXED_POINT_COEF;
 
         auxiliar = (1 * FIXED_POINT_COEF) - decayGain;
