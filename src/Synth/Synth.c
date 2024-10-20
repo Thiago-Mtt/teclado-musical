@@ -3,6 +3,7 @@
 #include "SynthTimer.h"
 
 #include <stdbool.h>
+#include <math.h>
 
 #define FIXED_POINT_COEF 10000
 
@@ -986,7 +987,9 @@ static int processSampleKeys (void)
     }
 
     floatSampleSignalSumBuffer = ((float)SampleSignalSumBuffer)/FIXED_POINT_COEF;
-    compressionCoefficient = 1.0/(getActiveSampleKeys()); /* Dividir 1 por N^(4/5) para ter melhor qualidade */
+    /* Dividir 1 por N^(4/5) para manter qualidade e evitar clipping*/
+    /* Valor 4/5 obtido experimentalmente por Matlab */
+    compressionCoefficient = 1.0/(powf(getActiveSampleKeys(), 4.0/5.0) ); 
     compressedSignalSumBuffer = (floatSampleSignalSumBuffer * 127.0) * compressionCoefficient;
     return ((int)compressedSignalSumBuffer);
 }
