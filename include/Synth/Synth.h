@@ -28,9 +28,12 @@ typedef struct
     unsigned int periodSize;
     unsigned int periodCounter;
     int32_t samples[NOTE_SAMPLES_MAX_SIZE];
+    float * samplesFloatingPoint;
     int32_t amplitude;
+    float   amplitudeFloatingPoint;
     unsigned long tickCounter;
     int32_t ADSRGain;
+    float   ADSRGainFloatingPoint;
 }SampleWaveKey;
 
 void Synth_Open(void);

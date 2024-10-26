@@ -7,6 +7,8 @@
 
 #define FIXED_POINT_COEF 10000
 
+static bool fixedPointOperation = false;
+
 static unsigned int sampleSizes[] =
 {
     123, /* C4 */
@@ -787,6 +789,25 @@ const float notesFrequencies[KEYS_SIZE] =
     523.25  /*C5*/
 }; 
 
+static const float attackTargetFloatingPoint = 1;
+static const float attackGainFloatingPoint   = 0.01;
+static const float decayTargetFloatingPoint  = 0;
+static const float decayGainFloatingPoint    = 0.00006;
+
+static const int32_t attackTarget  =(int32_t)(attackTargetFloatingPoint     * FIXED_POINT_COEF);
+static const int32_t attackGain    =(int32_t)( attackGainFloatingPoint      * FIXED_POINT_COEF);
+
+static const int32_t decayTarget   =(int32_t)( decayTargetFloatingPoint     * FIXED_POINT_COEF);
+/* Trocar valor de 0.00006 por 0.0001 para entrar na conversão de ponto fixo */
+static const int32_t decayGain     =(int32_t)( 0.0001            * FIXED_POINT_COEF);
+/* Valor usado caso se queira usar um ganho de decaimento menor que 0.0001 */
+/* Número de vezes pelo qual o valor ADSR durante decaimento é o mesmo */
+/* Na média, o ganho de decaimento será decayGain / decaySkipCount     */
+static const unsigned int decaySkipCount = 1;
+
+static const float   attackTime = 0.02;         /* unidade em segundos */
+static const float   ADSRDecayMinimum = 0.01;   /* Valor minimo do ADSR durante decaimento antes de desligar tecla */
+
 static SquareWaveKey squareKeys[KEYS_SIZE];
 
 static SampleWaveKey sampleKeys[KEYS_SIZE];
@@ -822,9 +843,12 @@ static void initKeys(void)
         sampleKeys[i].periodCounter = 0;
         sampleKeys[i].periodSize = sampleSizes[i];
         fixedPointConvert(sampleKeys[i].samples, noteSamples[i], sampleSizes[i]);
+        sampleKeys[i].samplesFloatingPoint = noteSamples[i];
         sampleKeys[i].amplitude = 0;
+        sampleKeys[i].amplitudeFloatingPoint =0;
         sampleKeys[i].tickCounter = 0;
         sampleKeys[i].ADSRGain = 0;
+        sampleKeys[i].ADSRGainFloatingPoint = 0;
     }
 }
 
@@ -894,21 +918,7 @@ static int processSquareKeys (void)
     return squareSignalSumBuffer;
 }
 
-static const int32_t attackTarget  =(int32_t)(1        * FIXED_POINT_COEF);
-static const int32_t attackGain    =(int32_t)( 0.01    * FIXED_POINT_COEF);
-
-static const int32_t decayTarget   =(int32_t)( 0       * FIXED_POINT_COEF);
-/* Trocar valor de 0.00006 por 0.0001 para entrar na conversão de ponto fixo */
-static const int32_t decayGain     =(int32_t)( 0.0001 * FIXED_POINT_COEF);
-/* Valor usado caso se queira usar um ganho de decaimento menor que 0.0001 */
-/* Número de vezes pelo qual o valor ADSR durante decaimento é o mesmo */
-/* Na média, o ganho de decaimento será decayGain / decaySkipCount     */
-static const unsigned int decaySkipCount = 1;
-
-static const float   attackTime = 0.02;         /* unidade em segundos */
-static const float   ADSRDecayMinimum = 0.01;   /* Valor minimo do ADSR durante decaimento antes de desligar tecla */
-
-static void processSampleADSR (SampleWaveKey * key)
+static void processSampleADSRFixedPoint (SampleWaveKey * key)
 {
     /* Processar proximo valor do ADSR usando duas curvas exponenciais */
     /* Uma para ataque e outra para queda */
@@ -970,11 +980,13 @@ static void resetSampleKey(SampleWaveKey * key)
 {
     key->periodCounter = 0;
     key->amplitude = 0;
+    key->amplitudeFloatingPoint = 0;
     key->ADSRGain = 0;
+    key->ADSRGainFloatingPoint = 0;
     key->tickCounter = 0;
 }
 
-static int processSampleKeys (void)
+static int processSampleKeysFixedPoint (void)
 {
     int32_t SampleSignalSumBuffer = 0;
     float   floatSampleSignalSumBuffer = 0;
@@ -992,7 +1004,7 @@ static int processSampleKeys (void)
             continue;
         } 
 
-        processSampleADSR(&sampleKeys[i]);
+        processSampleADSRFixedPoint(&sampleKeys[i]);
         sampleKeys[i].amplitude = sampleKeys[i].samples[sampleKeys[i].periodCounter];
         sampleKeys[i].amplitude *= sampleKeys[i].ADSRGain;
         sampleKeys[i].amplitude = sampleKeys[i].amplitude/FIXED_POINT_COEF;
@@ -1023,6 +1035,71 @@ static int processSampleKeys (void)
     return ((int)compressedSignalSumBuffer);
 }
 
+static void processSampleADSRFloatingPoint (SampleWaveKey * key)
+{
+    /* Processar proximo valor do ADSR usando duas curvas exponenciais */
+    /* Uma para ataque e outra para queda */
+    float keyTime = key->tickCounter / samplingFrequency;
+
+    if (keyTime < attackTime) /* Ataque */
+    {   
+        key->ADSRGainFloatingPoint = attackTargetFloatingPoint*attackGainFloatingPoint + (1.0 - attackGainFloatingPoint)*(key->ADSRGainFloatingPoint);
+    }
+    else                /* Decaimento */
+    {
+        /* Equação original */
+        key->ADSRGainFloatingPoint = decayTargetFloatingPoint*decayGainFloatingPoint + (1.0 - decayGainFloatingPoint)*key->ADSRGainFloatingPoint;
+    }
+
+    key->tickCounter++;
+}
+
+static int processSampleKeysFloatingPoint (void)
+{
+    float   SampleSignalSumBuffer = 0;
+    float   floatSampleSignalSumBuffer = 0;
+    float   compressedSignalSumBuffer = 0;
+    float   compressionCoefficient = 1;
+    float   keyTime;
+
+    int i = 0;
+    for ( i = 0; i < KEYS_SIZE; i++)
+    {
+        if(!sampleKeys[i].pressed)
+        {
+            resetSampleKey(&sampleKeys[i]);
+            continue;
+        } 
+
+        processSampleADSRFloatingPoint(&sampleKeys[i]);
+        sampleKeys[i].amplitudeFloatingPoint = sampleKeys[i].samplesFloatingPoint[sampleKeys[i].periodCounter];
+        sampleKeys[i].amplitudeFloatingPoint *= sampleKeys[i].ADSRGainFloatingPoint;
+
+        sampleKeys[i].periodCounter++;
+        sampleKeys[i].periodCounter = sampleKeys[i].periodCounter % sampleKeys[i].periodSize;
+    }
+
+    for (int i = 0; i < KEYS_SIZE; i++)
+    {
+        SampleSignalSumBuffer += sampleKeys[i].amplitudeFloatingPoint;
+
+        keyTime = sampleKeys[i].tickCounter / samplingFrequency;
+        if (keyTime > attackTime && (sampleKeys[i].ADSRGainFloatingPoint <= ADSRDecayMinimum) )
+        {
+            /* Desligar notas cujo volume já está baixo durante decaimento */
+            sampleKeys[i].pressed = false;
+            resetSampleKey(&sampleKeys[i]);
+        }
+    }
+
+    floatSampleSignalSumBuffer = SampleSignalSumBuffer;
+    /* Dividir 1 por N^(4/5) para manter qualidade e evitar clipping*/
+    /* Valor 4/5 obtido experimentalmente por Matlab */
+    compressionCoefficient = 1.0/(powf(getActiveSampleKeys(), 4.0/5.0) ); 
+    compressedSignalSumBuffer = (floatSampleSignalSumBuffer * 127.0) * compressionCoefficient;
+    return ((int)compressedSignalSumBuffer);
+}
+
 void Synth_Run(void)
 {
     int signalSumBuffer = 0;
@@ -1036,7 +1113,12 @@ void Synth_Run(void)
 
     if (currentKeyType == sampleSignal)
     {
-        signalSumBuffer = processSampleKeys();
+        if (fixedPointOperation)
+        {
+            signalSumBuffer = processSampleKeysFixedPoint();
+        }
+        else signalSumBuffer = processSampleKeysFloatingPoint();
+        
     }
     else if (currentKeyType == squareSignal)
     {
