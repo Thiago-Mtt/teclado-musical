@@ -877,7 +877,9 @@ void Synth_Close(void)
 void Synth_Press(Note note)
 {
     squareKeys[note].pressed = true;
+
     sampleKeys[note].pressed = true;
+    sampleKeys[note].active  = true;
 }
 
 void Synth_Release(Note note)
@@ -923,10 +925,10 @@ static void processSampleADSRFixedPoint (SampleWaveKey * key)
     /* Processar proximo valor do ADSR usando duas curvas exponenciais */
     /* Uma para ataque e outra para queda */
     float keyTime = key->tickCounter / samplingFrequency;
-    int32_t auxiliar, oldADSRGain;
+    int32_t auxiliar, oldADSRGain, releaseGain;
 
     oldADSRGain = key->ADSRGain;
-    if (keyTime < attackTime) /* Ataque */
+    if (key->pressed && keyTime < attackTime) /* Ataque */
     {   
         /* Função original */
         /* key->ADSRGain = attackTarget*attackGain + (1.0 - attackGain)*(key->ADSRGain); */
@@ -940,7 +942,7 @@ static void processSampleADSRFixedPoint (SampleWaveKey * key)
 
         key->ADSRGain = key->ADSRGain + auxiliar;
     }
-    else                /* Decaimento */
+    else if (key->pressed && keyTime >= attackTime)               /* Decaimento */
     {
         /* Equação original */
         /* key->ADSRGain = decayTarget*decayGain + (1.0 - decayGain)*key->ADSRGain; */
@@ -954,6 +956,27 @@ static void processSampleADSRFixedPoint (SampleWaveKey * key)
         key->ADSRGain = key->ADSRGain / FIXED_POINT_COEF;
 
         auxiliar = (1 * FIXED_POINT_COEF) - decayGain;
+        auxiliar = auxiliar * oldADSRGain;
+        auxiliar = auxiliar / FIXED_POINT_COEF;
+
+        key->ADSRGain = key->ADSRGain + auxiliar;
+    }
+    else if (!key->pressed)
+    {
+        /* Equação original */
+        /* key->ADSRGain = decayTarget*decayGain + (1.0 - decayGain)*key->ADSRGain; */
+        if (decaySkipCount > 1 && (key->tickCounter % decaySkipCount) != 0)
+        {
+            key->tickCounter++;
+            return;
+        }
+
+        releaseGain = decayGain*10;
+
+        key->ADSRGain = decayTarget*releaseGain;
+        key->ADSRGain = key->ADSRGain / FIXED_POINT_COEF;
+
+        auxiliar = (1 * FIXED_POINT_COEF) - releaseGain;
         auxiliar = auxiliar * oldADSRGain;
         auxiliar = auxiliar / FIXED_POINT_COEF;
 
@@ -998,7 +1021,7 @@ static int processSampleKeysFixedPoint (void)
     int i = 0;
     for ( i = 0; i < KEYS_SIZE; i++)
     {
-        if(!sampleKeys[i].pressed)
+        if(!sampleKeys[i].active)
         {
             resetSampleKey(&sampleKeys[i]);
             continue;
@@ -1023,6 +1046,7 @@ static int processSampleKeysFixedPoint (void)
         {
             /* Desligar notas cujo volume já está baixo durante decaimento */
             sampleKeys[i].pressed = false;
+            sampleKeys[i].active = false;
             resetSampleKey(&sampleKeys[i]);
         }
     }
@@ -1039,16 +1063,22 @@ static void processSampleADSRFloatingPoint (SampleWaveKey * key)
 {
     /* Processar proximo valor do ADSR usando duas curvas exponenciais */
     /* Uma para ataque e outra para queda */
+    float releaseGain;
     float keyTime = key->tickCounter / samplingFrequency;
 
-    if (keyTime < attackTime) /* Ataque */
+    if (key->pressed && keyTime < attackTime) /* Ataque */
     {   
         key->ADSRGainFloatingPoint = attackTargetFloatingPoint*attackGainFloatingPoint + (1.0 - attackGainFloatingPoint)*(key->ADSRGainFloatingPoint);
     }
-    else                /* Decaimento */
+    else if (key->pressed && keyTime >= attackTime)               /* Decaimento */
     {
         /* Equação original */
         key->ADSRGainFloatingPoint = decayTargetFloatingPoint*decayGainFloatingPoint + (1.0 - decayGainFloatingPoint)*key->ADSRGainFloatingPoint;
+    }
+    else if (!key->pressed)
+    {
+        releaseGain = decayGainFloatingPoint*10;
+        key->ADSRGainFloatingPoint = decayTargetFloatingPoint*releaseGain + (1.0 - releaseGain)*key->ADSRGainFloatingPoint;
     }
 
     key->tickCounter++;
@@ -1065,7 +1095,7 @@ static int processSampleKeysFloatingPoint (void)
     int i = 0;
     for ( i = 0; i < KEYS_SIZE; i++)
     {
-        if(!sampleKeys[i].pressed)
+        if(!sampleKeys[i].active)
         {
             resetSampleKey(&sampleKeys[i]);
             continue;
@@ -1088,6 +1118,7 @@ static int processSampleKeysFloatingPoint (void)
         {
             /* Desligar notas cujo volume já está baixo durante decaimento */
             sampleKeys[i].pressed = false;
+            sampleKeys[i].active  = false;
             resetSampleKey(&sampleKeys[i]);
         }
     }

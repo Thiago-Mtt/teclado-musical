@@ -25,6 +25,7 @@ typedef struct
 typedef struct
 {
     bool pressed;
+    bool active;
     unsigned int periodSize;
     unsigned int periodCounter;
     int32_t samples[NOTE_SAMPLES_MAX_SIZE];
