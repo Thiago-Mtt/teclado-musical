@@ -18,6 +18,8 @@ CFLAGS += -I$(UNITY_HOME)/src
 CFLAGS += -I$(UNITY_HOME)/extras/fixture/src
 CFLAGS += -I$(INC_DIR)/Button
 CFLAGS += -I$(INC_DIR)/Synth
+CFLAGS += -I$(INC_DIR)/TimeService
+CFLAGS += -I$(INC_DIR)/Util
 
 
 # List module source files
