@@ -8,8 +8,10 @@ TEST_GROUP_RUNNER(ButtonHandler)
   RUN_TEST_CASE(ButtonHandler, CloseButtonReaderOnClose);
   RUN_TEST_CASE(ButtonHandler, ButtonsInitializedAsOpen);
   RUN_TEST_CASE(ButtonHandler, ButtonsOutOfRangeReadErrorValue);
-  RUN_TEST_CASE(ButtonHandler, ButtonPressedChangesStateToPressed);
-  RUN_TEST_CASE(ButtonHandler, ButtonReleaseChangesStateToOpen);
+  RUN_TEST_CASE(ButtonHandler, ButtonPressedDoesNotChangeStateBeforeDebouncingTime);
+  RUN_TEST_CASE(ButtonHandler, ButtonPressedChangesStateToPressedAfterDebounce);
+  RUN_TEST_CASE(ButtonHandler, ButtonRelaseDoesNotChangeStateBeforeDebounce);
+  RUN_TEST_CASE(ButtonHandler, ButtonReleaseChangesStateToOpenAfterDebounce);
   RUN_TEST_CASE(ButtonHandler, ManyButtonsPressedChangesStatesToPressed);
   RUN_TEST_CASE(ButtonHandler, ManyButtonsPressedThenReleasedChangesStatesToOpen);
   RUN_TEST_CASE(ButtonHandler, InitializedButtonIsNotChanged);

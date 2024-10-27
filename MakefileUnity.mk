@@ -20,6 +20,7 @@ CFLAGS += -I$(INC_DIR)/Button
 CFLAGS += -I$(INC_DIR)/Synth
 CFLAGS += -I$(INC_DIR)/TimeService
 CFLAGS += -I$(INC_DIR)/Util
+CFLAGS += -I$(TEST_DIR)/TimeService
 
 
 # List module source files

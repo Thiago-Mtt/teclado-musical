@@ -9,16 +9,18 @@
  * 8 Botoes (0-7) iniciados como abertos                                                    OK
  * Botoes inexistentes (8-...) retornam estado de erro                                      OK
  * 
- * Pressionar botao troca estado para pressionado                                           OK
- * Soltar botao troca estado para aberto                                                    OK
- * Pressionar N botoes troca os estados corretamente                                        OK
- * Soltar N-1 botoes trocam o estado corretamente                                           OK
+ * Pressionar botao não troca estado antes do tempo de debounce                             OK
+ * Pressionar botao troca estado para pressionado após tempo de debouce                     OK
+ * Soltar botao nao troca estado antes do tempo de debounce                                 OK
+ * Soltar botao troca estado para aberto apos tempo de debounce                             OK
+ * Pressionar N botoes troca os estados corretamente                                        
+ * Soltar N-1 botoes trocam o estado corretamente                                           
  * 
- * Leitura de botão após inicialização não retorna alteração de estado do botão             OK
- * Retorna estado alterado (1)o apos pressionar botao da primeira vez que funcao e chamada  OK
- * Retorna estado inalterado (0) da segunda vez que funcao e chamada                        OK  
- * Retorna estado alterado apos soltar botao                                                OK
- * Retorna estado inalterado apos segunda chamada da funcao                                 OK
+ * Leitura de botão após inicialização não retorna alteração de estado do botão             
+ * Retorna estado alterado (1)o apos pressionar botao da primeira vez que funcao e chamada  
+ * Retorna estado inalterado (0) da segunda vez que funcao e chamada                          
+ * Retorna estado alterado apos soltar botao                                                
+ * Retorna estado inalterado apos segunda chamada da funcao                                 
  * Detectar estado alterado de multiplos botoes
  * 
  * 
@@ -30,16 +32,29 @@
 #include "ButtonHandler.h"
 #include "FakeButtonReader.h"
 
+#include "TimeService.h"
+#include "FakeSystemTimer.h"
+
 TEST_GROUP(ButtonHandler);
+
+static void runButtonHandlerForMicroseconds (timeMicroseconds time)
+{
+    ButtonHandler_Run();
+    FakeSystemTimer_AddTime(time);
+    ButtonHandler_Run();
+}
+
 
 TEST_SETUP(ButtonHandler)
 {
+    TimeService_Create();
     ButtonHandler_Open();
 }
 
 TEST_TEAR_DOWN(ButtonHandler)
 {
     ButtonHandler_Close();
+    TimeService_Destroy();
 }
 
 TEST(ButtonHandler, OpenAndClose)
@@ -83,7 +98,7 @@ TEST(ButtonHandler, ButtonsOutOfRangeReadErrorValue)
     TEST_ASSERT(state == errorState);
 }
 
-TEST(ButtonHandler, ButtonPressedChangesStateToPressed)
+TEST(ButtonHandler, ButtonPressedDoesNotChangeStateBeforeDebouncingTime)
 {
     unsigned int button = 0;
     ButtonState state;
@@ -92,18 +107,44 @@ TEST(ButtonHandler, ButtonPressedChangesStateToPressed)
     ButtonHandler_Run();
     ButtonHandler_GetButtonState(button, &state);
 
-    TEST_ASSERT(state == pressed);
+    TEST_ASSERT(state == opened);
 }
 
-TEST(ButtonHandler, ButtonReleaseChangesStateToOpen)
+TEST(ButtonHandler, ButtonPressedChangesStateToPressedAfterDebounce)
 {
     unsigned int button = 0;
     ButtonState state;
 
     FakeButtonReader_PressButton(button);
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
+    ButtonHandler_GetButtonState(button, &state);
+
+    TEST_ASSERT(state == pressed);
+}
+
+TEST(ButtonHandler, ButtonRelaseDoesNotChangeStateBeforeDebounce)
+{
+    unsigned int button = 0;
+    ButtonState state;
+
+    FakeButtonReader_PressButton(button);
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
     FakeButtonReader_ReleaseButton(button);
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US-10);
+    ButtonHandler_GetButtonState(button, &state);
+
+    TEST_ASSERT(state == pressed);
+}
+
+TEST(ButtonHandler, ButtonReleaseChangesStateToOpenAfterDebounce)
+{
+    unsigned int button = 0;
+    ButtonState state;
+
+    FakeButtonReader_PressButton(button);
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
+    FakeButtonReader_ReleaseButton(button);
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
     ButtonHandler_GetButtonState(button, &state);
 
     TEST_ASSERT(state == opened);
@@ -117,7 +158,7 @@ TEST(ButtonHandler, ManyButtonsPressedChangesStatesToPressed)
     {
         FakeButtonReader_PressButton(i);
     }
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
 
     for (int i = 0; i < (NUMBER_OF_BUTTONS - 3); i++)
     {
@@ -141,14 +182,13 @@ TEST(ButtonHandler, ManyButtonsPressedThenReleasedChangesStatesToOpen)
         FakeButtonReader_PressButton(i);
     }
     
-    ButtonHandler_Run();
-
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
     for (int i = 0; i < (NUMBER_OF_BUTTONS - 3); i++)
     {
         FakeButtonReader_ReleaseButton(i);
     }
 
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
 
     for (int i = 0; i < (NUMBER_OF_BUTTONS - 3); i++)
     {
@@ -174,7 +214,7 @@ TEST(ButtonHandler, DetectButtonChangeFromOpenToPressed)
     int change = 0;
 
     FakeButtonReader_PressButton(0);
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
     
     change = ButtonHandler_GetButtonState(0, &state);
     TEST_ASSERT(change);
@@ -186,7 +226,7 @@ TEST(ButtonHandler, ReturnNoChangeAfterSecondButtonReadCall)
     int change = 0;
 
     FakeButtonReader_PressButton(0);
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
     
     change = ButtonHandler_GetButtonState(0, &state);
     change = ButtonHandler_GetButtonState(0, &state);
@@ -200,11 +240,11 @@ TEST(ButtonHandler, DetectButtonChangeFromPressedToOpen)
     int change = 0;
 
     FakeButtonReader_PressButton(0);
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
     change = ButtonHandler_GetButtonState(0, &state);
     
     FakeButtonReader_ReleaseButton(0);
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
     change = ButtonHandler_GetButtonState(0, &state);
 
     TEST_ASSERT(state == opened);
@@ -218,11 +258,11 @@ TEST(ButtonHandler, ReturnNoChangeAfterSecondButtonOpenRead)
     int change = 0;
 
     FakeButtonReader_PressButton(0);
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
     change = ButtonHandler_GetButtonState(0, &state);
     
     FakeButtonReader_ReleaseButton(0);
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
     change = ButtonHandler_GetButtonState(0, &state);
     change = ButtonHandler_GetButtonState(0, &state);
 
@@ -239,7 +279,7 @@ TEST(ButtonHandler, DetectChangeFromMultipleButtons)
     {
         FakeButtonReader_PressButton(i);
     }
-    ButtonHandler_Run();
+    runButtonHandlerForMicroseconds(DEBOUNCE_TIME_US+10);
     for (int i = 0; i < NUMBER_OF_BUTTONS; i++)
     {
         change = ButtonHandler_GetButtonState(i, &state);
