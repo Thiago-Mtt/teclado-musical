@@ -7,7 +7,7 @@
 
 #define FIXED_POINT_COEF 10000
 
-static bool fixedPointOperation = false;
+static OperationType pointOperation = floatingPoint;
 
 static unsigned int sampleSizes[] =
 {
@@ -1144,7 +1144,7 @@ void Synth_Run(void)
 
     if (currentKeyType == sampleSignal)
     {
-        if (fixedPointOperation)
+        if (pointOperation == fixedPoint)
         {
             signalSumBuffer = processSampleKeysFixedPoint();
         }
@@ -1182,4 +1182,9 @@ char Synth_GetNextDACValue(void)
 SampleWaveKey  Synth_GetNoteSampleWaveKey(Note note)
 {
     return sampleKeys[note];
+}
+
+void Synth_SetOperationType(OperationType type)
+{
+    pointOperation = type;
 }
