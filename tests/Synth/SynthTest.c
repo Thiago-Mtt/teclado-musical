@@ -166,7 +166,7 @@ TEST(Synth, PressC4IncrementsDACBy12)
 {
     FakeSynthDAC_ClearLastWrite();
 
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
     checkDACForNoNewWrite();
 
     FakeSynthTimer_Interrupt();
@@ -207,14 +207,14 @@ TEST(Synth, PauseTimerInterruptOnNextDACValueUpdate)
 TEST(Synth, ProcessNextDACValueOnlyAfterDACWrite)
 {
     FakeSynthDAC_ClearLastWrite();
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
     Synth_Run();
     FakeSynthTimer_Interrupt();
 
     checkDACForNewWriteAndValue(128); // C4 não contabilizado
 
     Synth_Run();
-    Synth_Press(Note_D4);
+    Synth_Press(Note_D);
     Synth_Run();
     FakeSynthTimer_Interrupt();
     checkDACForNewWriteAndValue(140); // C4 contabilizado, mas não D4
@@ -222,7 +222,7 @@ TEST(Synth, ProcessNextDACValueOnlyAfterDACWrite)
 
 TEST(Synth, PressC4IncrementsDACBy12ForHalfPeriod)
 {
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
     Synth_Run();
     FakeSynthTimer_Interrupt();
 
@@ -236,7 +236,7 @@ TEST(Synth, PressC4IncrementsDACBy12ForHalfPeriod)
 
 TEST(Synth, PressC4DecrementDACBy12AfterHalfPeriod)
 {
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
     runSynthCycles(63);
 
     checkDACForNewWriteAndValue(128-12);
@@ -245,12 +245,12 @@ TEST(Synth, PressC4DecrementDACBy12AfterHalfPeriod)
 
 TEST(Synth, ReleaseC4KeyReturnsDACtoMidLevel)
 {
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
     runSynthCycles(2);
 
     checkDACForNewWriteAndValue(140);
 
-    Synth_Release(Note_C4);
+    Synth_Release(Note_C);
     runSynthCycles(2);
 
     checkDACForNewWriteAndValue(128);
@@ -258,12 +258,12 @@ TEST(Synth, ReleaseC4KeyReturnsDACtoMidLevel)
 
 TEST(Synth, ReleaseAndPressKeyResetsSignalProgression)
 {
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
     runSynthCycles(65);
 
-    Synth_Release(Note_C4);
+    Synth_Release(Note_C);
     runSynthCycles(2);
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
     runSynthCycles(2);
 
     checkDACForNewWriteAndValue(140);
@@ -271,7 +271,7 @@ TEST(Synth, ReleaseAndPressKeyResetsSignalProgression)
 
 TEST(Synth, KeepKeyPressedRepeatsSignalOnDAC)
 {
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
     runSynthCycles(2);
     checkDACForNewWriteAndValue(128+12);
 
@@ -287,7 +287,7 @@ TEST(Synth, KeepKeyPressedRepeatsSignalOnDAC)
 
 TEST(Synth, PressD4)
 {
-    Synth_Press(Note_D4);
+    Synth_Press(Note_D);
     runSynthCycles(55);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -298,7 +298,7 @@ TEST(Synth, PressD4)
 
 TEST(Synth, PressE4)
 {
-    Synth_Press(Note_E4);
+    Synth_Press(Note_E);
     runSynthCycles(49);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -310,7 +310,7 @@ TEST(Synth, PressE4)
 
 TEST(Synth, PressF4)
 {
-    Synth_Press(Note_F4);
+    Synth_Press(Note_F);
     runSynthCycles(46);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -322,7 +322,7 @@ TEST(Synth, PressF4)
 
 TEST(Synth, PressG4)
 {
-    Synth_Press(Note_G4);
+    Synth_Press(Note_G);
     runSynthCycles(41);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -334,7 +334,7 @@ TEST(Synth, PressG4)
 
 TEST(Synth, PressA4)
 {
-    Synth_Press(Note_A4);
+    Synth_Press(Note_A);
     runSynthCycles(37);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -345,7 +345,7 @@ TEST(Synth, PressA4)
 
 TEST(Synth, PressB4)
 {
-    Synth_Press(Note_B4);
+    Synth_Press(Note_B);
     runSynthCycles(33);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -356,7 +356,7 @@ TEST(Synth, PressB4)
 
 TEST(Synth, PressC5)
 {
-    Synth_Press(Note_C5);
+    Synth_Press(Note_Cp);
     runSynthCycles(31);
 
     checkDACForNewWriteAndValue(128 + 12);
@@ -367,8 +367,8 @@ TEST(Synth, PressC5)
 
 TEST(Synth, PressTwoKeysSumsTheirSignals)
 {
-    Synth_Press(Note_C4);
-    Synth_Press(Note_D4);
+    Synth_Press(Note_C);
+    Synth_Press(Note_D);
     runSynthCycles(2);
     
     checkDACForNewWriteAndValue(128+12+12);
@@ -382,13 +382,13 @@ TEST(Synth, PressTwoKeysSumsTheirSignals)
 
 TEST(Synth, PressTwoKeysAndReleasingOneRemovesOnlyOneKey)
 {
-    Synth_Press(Note_C4);
-    Synth_Press(Note_D4);
+    Synth_Press(Note_C);
+    Synth_Press(Note_D);
     runSynthCycles(4);
     
     checkDACForNewWriteAndValue(128+12+12);
 
-    Synth_Release(Note_C4);
+    Synth_Release(Note_C);
     runSynthCycles(2);
     checkDACForNewWriteAndValue(128+12);
 }
@@ -397,7 +397,7 @@ IGNORE_TEST(Synth, CheckSampleKeyValueC4)
 {
     SampleWaveKey c4Key;
     Synth_SetKeys(sampleSignal);
-    c4Key = Synth_GetNoteSampleWaveKey(Note_C4);
+    c4Key = Synth_GetNoteSampleWaveKey(Note_C);
 
     printf("\nC4 periodSize: %d", c4Key.periodSize);
     printf("\nC4 firstSample: %d", c4Key.samples[0]);
@@ -411,11 +411,11 @@ IGNORE_TEST(Synth, CheckSampleyKeyAmplitudeC4)
     Synth_SetKeys(sampleSignal);
 
     
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
 
     for (index = 0; index < 130; index++)
     {
-        c4Key = Synth_GetNoteSampleWaveKey(Note_C4);
+        c4Key = Synth_GetNoteSampleWaveKey(Note_C);
         printf("\n Index: %d  C4Pressed: %d   C4 Amplitude: %d    C4 Counter:%d  C4 PeriodSize: %d", index, c4Key.pressed ,c4Key.amplitude, c4Key.periodCounter, c4Key.periodSize);
         runSynthCycles(1);
     }
@@ -426,7 +426,7 @@ IGNORE_TEST(Synth, PrintSampleSignalKeyTypeC4)
     int index;
     Synth_SetKeys(sampleSignal);
 
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
 
     for (index = 0; index < 1000; index++)
     {
@@ -442,11 +442,11 @@ IGNORE_TEST(Synth, CheckSampleyKeyAmplitudeADSRC4)
     Synth_SetKeys(sampleSignal);
 
     
-    Synth_Press(Note_C4);
+    Synth_Press(Note_C);
 
     for (index = 0; index < 1000; index++)
     {
-        c4Key = Synth_GetNoteSampleWaveKey(Note_C4);
+        c4Key = Synth_GetNoteSampleWaveKey(Note_C);
         printf("\n Index: %d  C4Pressed: %d     C4ADSR: %d   C4 Amplitude: %d   C4TickCounter: %ld", index, c4Key.pressed, c4Key.ADSRGain,c4Key.amplitude, c4Key.tickCounter);
         runSynthCycles(1);
     }
@@ -457,9 +457,9 @@ IGNORE_TEST(Synth, CheckSampleyKeyAmplitudeADSRMultipleKeys)
     int index;
     Synth_SetKeys(sampleSignal);
 
-    Synth_Press(Note_C4);
-    Synth_Press(Note_E4);
-    Synth_Press(Note_G4);
+    Synth_Press(Note_C);
+    Synth_Press(Note_E);
+    Synth_Press(Note_G);
 
     for (index = 0; index < 1000; index++)
     {

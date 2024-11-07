@@ -3,7 +3,8 @@
 
 #include "ButtonState.h"
 
-#define NUMBER_OF_BUTTONS 8
+#define NUMBER_OF_BUTTONS 9
+#define DEBOUNCE_TIME_US  30000
 
 
 void    ButtonHandler_Open                 (void);

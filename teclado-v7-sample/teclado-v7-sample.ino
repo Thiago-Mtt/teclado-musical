@@ -1,5 +1,5 @@
 /*
- *  Teclado Musical V1 - Onda quadrada
+ *  Teclado Musical V7 - Teclado musical com duas opcoes de oitavas
  *
  *
 */
@@ -43,31 +43,21 @@ void setKey(unsigned int keyNote, ButtonState state)
 void loop() {
   bool changedState;
   ButtonState state;
-  /*
-  ButtonHandler_Run();
-
-  for (unsigned int keyNote = 0; keyNote < NUMBER_OF_BUTTONS; keyNote++)
-  {
-    changedState = ButtonHandler_GetButtonState(keyNote, &state);
-    if (changedState)
-    {
-      Serial.println(keyNote);
-    }
-  }
-  */
-
-  //changedState = ButtonHandler_GetButtonState(0, &state);
-  //Serial.println((int)state, DEC);
   
-
   ButtonHandler_Run();
-  for (unsigned int keyNote = 0; keyNote < NUMBER_OF_BUTTONS; keyNote++)
+  for (unsigned int keyNote = 0; keyNote < (NUMBER_OF_BUTTONS-1); keyNote++)
   {
     changedState = ButtonHandler_GetButtonState(keyNote, &state);
     if (changedState)
     {
       setKey(keyNote, state);
     }
+  }
+
+  changedState = ButtonHandler_GetButtonState(8, &state);
+  if (changedState && state == pressed)
+  {
+    Synth_ChangeOctave();
   }
 
   Synth_Run();

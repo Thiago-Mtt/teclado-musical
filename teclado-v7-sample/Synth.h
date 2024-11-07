@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define NOTE_SAMPLES_MAX_SIZE 200
+#define NOTE_SAMPLES_MAX_SIZE 300
 
 typedef enum
 { squareSignal, sampleSignal}
@@ -15,7 +15,7 @@ typedef enum
 OperationType;
 
 typedef enum
-{ Note_C4, Note_D4, Note_E4, Note_F4, Note_G4, Note_A4, Note_B4, Note_C5, KEYS_SIZE}
+{ Note_C, Note_D, Note_E, Note_F, Note_G, Note_A, Note_B, Note_Cp, KEYS_SIZE}
 Note;
 
 typedef struct 
@@ -49,6 +49,8 @@ void Synth_SetOperationType(OperationType type);
 
 void Synth_Press(Note note);
 void Synth_Release(Note note);
+
+void Synth_ChangeOctave(void);
 
 void Synth_Run(void);
 
